@@ -9,7 +9,7 @@ MIDIIn.connectAll;
 ~projectRoot = "/Users/dmanz/Desktop/kernos";
 
 // Reading in sample as mono
-~buf = Buffer.readChannel(s, ~projectRoot +/+ "samples/whisper.mp3", channels: [0]);
+~buf = Buffer.readChannel(s, ~projectRoot +/+ "samples/poem_natural.wav", channels: [0]);
 ~buf.query;
 
 (
@@ -18,11 +18,17 @@ MIDIIn.connectAll;
 )
 (
 SynthDef(\kernosGranular, {
-    arg buf, grainEnv, trigRate = 30, grainPitch = 7, pitchSpread = 0.1, panSpread = 0.2, dur = 0.5, posSpread = 0.4;
+    // Defining args, can be set during run-time
+    arg buf, grainEnv, trigRate = 30, grainPitch = 7, pitchSpread = 0.1, panSpread = 0.2, dur = 0.5, posSpread = 0.4, dryWet = 1;
+
+    // Defining vars
     var triggerSignal = Impulse.kr(trigRate);
     var grainPos = LFSaw.kr(1 / BufDur.ir(buf)).range(0, 1) + TRand.kr(0 - posSpread, posSpread, triggerSignal);
-    var grainRate = (grainPitch + TRand.kr(0 - pitchSpread, pitchSpread, triggerSignal)).midiratio();
+    var grainRate = (grainPitch + TRand.kr(0 - pitchSpread, pitchSpread, triggerSignal)).midiratio;
     var pan = TRand.kr(0 - panSpread, panSpread, triggerSignal);
+    var dry, mix;
+
+    // Generating granular signal branch
     var sig = GrainBuf.ar(
         numChannels: 2,
         trigger: triggerSignal,
@@ -34,7 +40,15 @@ SynthDef(\kernosGranular, {
         pan: pan,
         envbufnum: grainEnv
     );
-    Out.ar(0, sig ! 2);
+
+    // Generating dry signal branch
+    dry = PlayBuf.ar(2, buf, loop: 1);
+    dry = dry ! 2;
+
+    // Mixing sample and granular signal branches
+    mix = XFade2.ar(dry, sig, dryWet * 2 - 1);
+
+    Out.ar(0, mix);
 }).add;
 )
 
@@ -45,7 +59,7 @@ x = Synth(\kernosGranular, [
     \buf, ~buf,
     \grainEnv, ~grainEnv,
     \trigRate: 20,
-    \grainPitch: -7,
+    \grainPitch: 7,
     \pitchSpread: 0.01,
     \panSpread: 0.01,
     \dur: 0.5,
@@ -90,24 +104,24 @@ x = Synth(\kernosGranular, [
     }, ccNum: 76);
 )
 
-
-// Dry signal, if needed
+// Encoder 5 to modulate central pitch
 (
-SynthDef(\samplePlayer, {
-    // Specifying run-time arguments
-    arg buf, amp = 1, attack = 0.1;
-    var sig, env;
+MIDIdef.cc(\pitch, { 
+    arg val, num, chan, src;
 
-    sig = PlayBuf.ar(1, buf, doneAction: 2);
-    env = Line.kr(0, 1, attack);
-    Out.ar(0, (sig * env * amp) ! 2);
+    var pitch = val.linlin(0, 127, -12, 12); // semitones
 
-}).add;
+    x.set(\grainPitch, pitch);
+}, ccNum: 77);
 )
 
+// Encoder 6 to modulate dry/wet between sample/granular branch
 (
-y = Synth(\samplePlayer, [
-    \buf, ~buf,
-    \envBuf, ~grainEnv
-]);
+MIDIdef.cc(\pitch, { 
+    arg val, num, chan, src;
+
+    var dryWet = val.linlin(0, 127, -1.0, 1.0); // semitones
+    x.set(\dryWet, dryWetx);
+
+}, ccNum: 93);
 )
