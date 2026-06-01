@@ -16,6 +16,11 @@ MIDIIn.connectAll;
     var env = Env.new([0, 1, 0], [0.01, 1], [0, -4]);
     ~grainEnv = Buffer.loadCollection(s, env.discretize(8192));
 )
+
+(
+    var env = Env.sine();
+    ~naturalEnv = Buffer.loadCollection(s, env.discretize(8192));
+)
 (
 SynthDef(\kernosGranular, {
     // Defining args, can be set during run-time
@@ -51,8 +56,6 @@ SynthDef(\kernosGranular, {
     Out.ar(0, mix);
 }).add;
 )
-
-
 
 (
 x = Synth(\kernosGranular, [
@@ -125,3 +128,44 @@ MIDIdef.cc(\pitch, {
 
 }, ccNum: 93);
 )
+
+(
+SynthDef(\kernosNatural, {
+    // Defining args, can be set during run-time
+    arg buf, grainEnv, trigRate = 30, grainPitch = 0, pitchSpread = 0, panSpread = 0, dur = 0.08, posSpread = 0;
+
+    // Defining vars
+    var triggerSignal = Impulse.kr(trigRate);
+    var phase = Phasor.ar(trig: 0, rate: BufRateScale.ir(buf), start: 0, end: BufFrames.ir(buf)) / BufFrames.ir(buf);   
+    var grainPos = phase + TRand.kr(0 - posSpread, posSpread, triggerSignal);
+    var grainRate = (grainPitch + TRand.kr(0 - pitchSpread, pitchSpread, triggerSignal)).midiratio;
+    var pan = TRand.kr(0 - panSpread, panSpread, triggerSignal);
+    var dry, mix;
+
+    // Generating granular signal branch
+    var sig = GrainBuf.ar(
+        numChannels: 2,
+        trigger: triggerSignal,
+        dur: dur,
+        sndbuf: buf,
+        rate: grainRate,
+        pos: grainPos,
+        interp: 2,
+        pan: pan,
+        envbufnum: grainEnv
+    );
+
+    Out.ar(0, sig);
+
+}).add;
+)
+
+(
+x = Synth(\kernosNatural, [
+    \buf, ~buf,
+    \grainEnv, ~naturalEnv
+])
+)
+
+x.set(\trigRate, 30);
+
