@@ -1,7 +1,7 @@
 ServerOptions.devices();
 
 s.options.inDevice("MacBook Pro Microphone");
-s.options.inDevice("MacBook Pro Speakers");
+s.options.outDevice("MacBook Pro Speakers");
 s.boot;
 
 s.options.numOutputBusChannels();
