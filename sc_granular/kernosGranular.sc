@@ -21,12 +21,37 @@ MIDIIn.connectAll;
 
 (
     var env = Env.new([0, 1, 0], [0.01, 1], [0, -4]);
-    ~grainEnv = Buffer.loadCollection(s, env.discretize(8192));
+    ~attackEnv = Buffer.loadCollection(s, env.discretize(8192));
 )
 
 (
     var env = Env.sine();
-    ~naturalEnv = Buffer.loadCollection(s, env.discretize(8192));
+    ~sineEnv = Buffer.loadCollection(s, env.discretize(8192));
+)
+
+(
+var env = Env([0, 1, 0], [0.25, 0.25], \sine);
+~gaussEnv = Buffer.loadCollection(s, env.discretize(8192));
+)
+
+(
+var env = Env.perc(0.001, 0.05, curve: -4);
+~percEnv = Buffer.loadCollection(s, env.discretize(8192));
+)
+
+(
+var env = Env([0, 1, 0], [0.8, 0.2], [4, -4]);
+~revEnv = Buffer.loadCollection(s, env.discretize(8192));
+)
+
+(
+var env = Env([0, 1, 0, 1, 0], [0.15, 0.15, 0.15, 0.15]);
+~doubleEnv = Buffer.loadCollection(s, env.discretize(8192));
+)
+
+(
+var env = Env([0, 1, 0], [0.001, 0.001]);
+~clickEnv = Buffer.loadCollection(s, env.discretize(8192));
 )
 (
 SynthDef(\kernosGranular, {
@@ -64,20 +89,6 @@ SynthDef(\kernosGranular, {
     Out.ar(0, mix);
 
 }).add;
-)
-
-(
-~kernosPresets = (
-    natural: (
-        trigRate: 30,
-        grainPitch: 0,
-        pitchSpread: 0,
-        panSpread: 0,
-        dur: 0.08,
-        posSpread: 0,
-        dryWet: 1
-    )
-)
 )
 
 (
@@ -146,13 +157,30 @@ MIDIdef.cc(\pitch, {
 }, ccNum: 93);
 )
 
-x.set(\trigRate, 18);
+(
+~kernosPresets = (
+    natural: (
+        trigRate: 30,
+        grainPitch: 0,
+        pitchSpread: 0,
+        panSpread: 0,
+        dur: 0.08,
+        posSpread: 0,
+        dryWet: 1
+    )
+)
+)
+
+x.set(\trigRate, 3);
 x.set(\grainPitch, 3);
 x.set(\pitchSpread, 0);
 x.set(\panSpread, 0.4);
-x.set(\dur, 0.08);
+x.set(\dur, 0.2);
 x.set(\posSpread, 0.4);
 x.set(\dryWet, 1);
+x.set(\grainEnv, ~attackEnv);
+x.set(\grainEnv, ~naturalEnv);
+x.set(\grainEnv, ~clickEnv);
 
 
 x.set(*~kernosPresets[\natural].asKeyValuePairs);
