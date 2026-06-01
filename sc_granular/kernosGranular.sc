@@ -169,3 +169,4 @@ x = Synth(\kernosNatural, [
 
 x.set(\trigRate, 30);
 
+
