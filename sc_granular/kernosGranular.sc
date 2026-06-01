@@ -1,7 +1,14 @@
-s.options.outDevice = "BlackHole 16ch";
-s.options.numInputBusChannels = 0;  // disable input completely, no mismatch possible
-s.options.sampleRate = 48000;       // match BlackHole's native rate
+ServerOptions.devices();
+
+s.options.inDevice("MacBook Pro Microphone");
+s.options.inDevice("External Headphones");
 s.boot;
+
+// black hole routing
+// s.options.outDevice = "BlackHole 16ch";
+// s.options.numInputBusChannels = 0;  // disable input completely, no mismatch possible
+// s.options.sampleRate = 48000;       // match BlackHole's native rate
+// s.boot;
 
 MIDIClient.init;
 MIDIIn.connectAll;
@@ -24,11 +31,12 @@ MIDIIn.connectAll;
 (
 SynthDef(\kernosGranular, {
     // Defining args, can be set during run-time
-    arg buf, grainEnv, trigRate = 30, grainPitch = 7, pitchSpread = 0.1, panSpread = 0.2, dur = 0.5, posSpread = 0.4, dryWet = 1;
+    arg buf, grainEnv, trigRate = 30, grainPitch = 0, pitchSpread = 0, panSpread = 0, dur = 0.08, posSpread = 0, dryWet = 1;
 
     // Defining vars
     var triggerSignal = Impulse.kr(trigRate);
-    var grainPos = LFSaw.kr(1 / BufDur.ir(buf)).range(0, 1) + TRand.kr(0 - posSpread, posSpread, triggerSignal);
+    var phase = Phasor.ar(trig: 0, rate: BufRateScale.ir(buf), start: 0, end: BufFrames.ir(buf)) / BufFrames.ir(buf);   
+    var grainPos = phase + TRand.kr(0 - posSpread, posSpread, triggerSignal);
     var grainRate = (grainPitch + TRand.kr(0 - pitchSpread, pitchSpread, triggerSignal)).midiratio;
     var pan = TRand.kr(0 - panSpread, panSpread, triggerSignal);
     var dry, mix;
@@ -54,19 +62,28 @@ SynthDef(\kernosGranular, {
     mix = XFade2.ar(dry, sig, dryWet * 2 - 1);
 
     Out.ar(0, mix);
+
 }).add;
+)
+
+(
+~kernosPresets = (
+    natural: (
+        trigRate: 30,
+        grainPitch: 0,
+        pitchSpread: 0,
+        panSpread: 0,
+        dur: 0.08,
+        posSpread: 0,
+        dryWet: 1
+    )
+)
 )
 
 (
 x = Synth(\kernosGranular, [
     \buf, ~buf,
-    \grainEnv, ~grainEnv,
-    \trigRate: 20,
-    \grainPitch: 7,
-    \pitchSpread: 0.01,
-    \panSpread: 0.01,
-    \dur: 0.5,
-    \posSpread: 0.3
+    \grainEnv, ~naturalEnv
 ])
 )
 
@@ -129,44 +146,15 @@ MIDIdef.cc(\pitch, {
 }, ccNum: 93);
 )
 
-(
-SynthDef(\kernosNatural, {
-    // Defining args, can be set during run-time
-    arg buf, grainEnv, trigRate = 30, grainPitch = 0, pitchSpread = 0, panSpread = 0, dur = 0.08, posSpread = 0;
+x.set(\trigRate, 18);
+x.set(\grainPitch, 3);
+x.set(\pitchSpread, 0);
+x.set(\panSpread, 0.4);
+x.set(\dur, 0.08);
+x.set(\posSpread, 0.4);
+x.set(\dryWet, 1);
 
-    // Defining vars
-    var triggerSignal = Impulse.kr(trigRate);
-    var phase = Phasor.ar(trig: 0, rate: BufRateScale.ir(buf), start: 0, end: BufFrames.ir(buf)) / BufFrames.ir(buf);   
-    var grainPos = phase + TRand.kr(0 - posSpread, posSpread, triggerSignal);
-    var grainRate = (grainPitch + TRand.kr(0 - pitchSpread, pitchSpread, triggerSignal)).midiratio;
-    var pan = TRand.kr(0 - panSpread, panSpread, triggerSignal);
-    var dry, mix;
 
-    // Generating granular signal branch
-    var sig = GrainBuf.ar(
-        numChannels: 2,
-        trigger: triggerSignal,
-        dur: dur,
-        sndbuf: buf,
-        rate: grainRate,
-        pos: grainPos,
-        interp: 2,
-        pan: pan,
-        envbufnum: grainEnv
-    );
-
-    Out.ar(0, sig);
-
-}).add;
-)
-
-(
-x = Synth(\kernosNatural, [
-    \buf, ~buf,
-    \grainEnv, ~naturalEnv
-])
-)
-
-x.set(\trigRate, 30);
+x.set(*~kernosPresets[\natural].asKeyValuePairs);
 
 
