@@ -1,6 +1,5 @@
 ServerOptions.devices();
 
-
 s.options.inDevice_("MacBook Pro Microphone");
 s.options.outDevice_("BlackHole 16ch");
 

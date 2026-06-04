@@ -1,6 +1,8 @@
 import pygame
+from pythonosc.udp_client import SimpleUDPClient
 
 pygame.init()
+client = SimpleUDPClient("127.0.0.1", 57120)
 
 WIDTH = 300
 HEIGHT = 600
@@ -27,6 +29,8 @@ while running:
 
     # One-pole low-pass filter
     flux += (target - flux) * alpha
+
+    client.send_message("/flux", flux)
 
     # Drawing
     screen.fill((20, 20, 20))
