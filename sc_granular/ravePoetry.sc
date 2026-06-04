@@ -4,7 +4,21 @@ s.options.inDevice_("MacBook Pro Microphone");
 s.options.outDevice_("BlackHole 16ch");
 
 s.boot;
-s.quit;
+
+// Global variable for incoming flux
+(
+~xBus = Bus.control(s, 1);
+~yBus = Bus.control(s, 1);
+)
+
+OSCdef(\flux, {
+    
+    arg msg;
+    ~xBus.set(msg[1]);
+    ~yBus.set(msg[1]);
+
+}, '/flux');
+
 // Print SC extensions folder
 Platform.userExtensionDir();
 
@@ -26,33 +40,24 @@ NN(\voice).methods;
 
 // Server.default.record;
 
-// Baseline resynthesis using forward/sample playback
-(
-    {
-        var sig = NN(\voice, \forward).ar(PlayBuf.ar(1, ~buf, loop: 1));
-        sig = sig ! 2;
-    }.play;
-)
-
 // Encoded latent (sample) offset
 (
 {
-    var latent, offsetLatent, sig, x, y, latentOffset;
-
-    // x = left/right, y = up/down
-    x = MouseX.kr(-5, 5);
-    y = MouseY.kr(5, -5);
+    var latent, offsetLatent, sig, x_offset, y_offset, latentOffset;
 
     latentOffset = Array.fill(22, 0);
 
-    // assign first two dims
-    latentOffset[2] = x;
-    latentOffset[4] = y;
+    x_offset = In.kr(~xBus);
+    y_offset = In.kr(~yBus);
 
-    latentOffset.do {
-        arg l, i;
-        l.poll(1, ("latent offset index " ++ i).asSymbol);
-    };
+    // assign first two dims
+    latentOffset[2] = x_offset;
+    latentOffset[4] = y_offset ;
+
+    // latentOffset.do {
+    //     arg l, i;
+    //     l.poll(1, ("latent offset index " ++ i).asSymbol);
+    // };
 
     latent = NN(\voice, \encode).ar(
         PlayBuf.ar(1, ~buf, loop: 1)

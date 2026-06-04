@@ -1,5 +1,12 @@
 import pygame
 from pythonosc.udp_client import SimpleUDPClient
+import math
+import random
+
+# persistent state
+theta = 0.0
+threshold = 0.3
+prev_flux = 0.0
 
 pygame.init()
 client = SimpleUDPClient("127.0.0.1", 57120)
@@ -11,7 +18,7 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 
 flux = 0.0
-alpha = 0.01
+alpha = 0.005
 
 running = True
 
@@ -27,10 +34,24 @@ while running:
 
     target = 1.0 if keys[pygame.K_SPACE] else 0.0
 
-    # One-pole low-pass filter
+    # One-pole low-pass filter (0–1 domain)
     flux += (target - flux) * alpha
 
-    client.send_message("/flux", flux)
+    # trigger: crossing threshold upward
+    if flux > threshold and prev_flux <= threshold:
+        theta = random.uniform(0, 2 * math.pi)
+        print(f'new theta: {theta}')
+        
+    prev_flux = flux
+
+    # polar mapping
+    r = flux * 5.0  # radius scaling
+
+    x_offset = r * math.cos(theta)
+    y_offset = r * math.sin(theta)  # optional squash for aspect ratio
+
+    # OSC output scaled to 0–5
+    client.send_message("/flux", [x_offset, y_offset])
 
     # Drawing
     screen.fill((20, 20, 20))
@@ -44,7 +65,6 @@ while running:
     x = (WIDTH - bar_width) // 2
     y = HEIGHT - margin - bar_height
 
-    # Outline
     pygame.draw.rect(
         screen,
         (100, 100, 100),
@@ -52,7 +72,6 @@ while running:
         width=2,
     )
 
-    # Filled column
     pygame.draw.rect(
         screen,
         (80, 180, 255),
@@ -60,7 +79,7 @@ while running:
     )
 
     pygame.display.set_caption(
-        f"Flux: {flux:.3f}    Target: {target:.1f}"
+        f"Flux: {flux:.3f} (0–1)   Target: {target:.1f}"
     )
 
     pygame.display.flip()
