@@ -1,9 +1,11 @@
 ServerOptions.devices();
 
-s.options.inDevice("MacBook Pro Microphone");
-s.options.outDevice("External Headphones");
-s.boot;
 
+s.options.inDevice_("MacBook Pro Microphone");
+s.options.outDevice_("BlackHole 16ch");
+
+s.boot;
+s.quit;
 // Print SC extensions folder
 Platform.userExtensionDir();
 
@@ -45,8 +47,8 @@ NN(\voice).methods;
     latentOffset = Array.fill(22, 0);
 
     // assign first two dims
-    latentOffset[0] = x;
-    latentOffset[1] = y;
+    latentOffset[2] = x;
+    latentOffset[4] = y;
 
     latentOffset.do {
         arg l, i;
@@ -65,5 +67,3 @@ NN(\voice).methods;
     sig ! 2;
 }.play;
 )
-
-
