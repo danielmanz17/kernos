@@ -1,7 +1,7 @@
 ServerOptions.devices();
 
-s.options.inDevice("MacBook Pro Microphone");
-s.options.outDevice("MacBook Pro Speakers");
+s.options.inDevice_("MacBook Pro Microphone");
+s.options.outDevice_("BlackHole 16ch");
 s.boot;
 
 // black hole routing
@@ -16,7 +16,7 @@ MIDIIn.connectAll;
 ~projectRoot = "/Users/dmanz/Desktop/kernos";
 
 // Reading in sample as mono
-~buf = Buffer.readChannel(s, ~projectRoot +/+ "samples/poem_natural.wav", channels: [0]);
+~buf = Buffer.readChannel(s, ~projectRoot +/+ "samples/rave_out.wav", channels: [0]);
 ~buf.query;
 
 (
@@ -97,6 +97,10 @@ x = Synth(\kernosGranular, [
     \grainEnv, ~sineEnv
 ])
 )
+
+x.set(\trigRate, 8);
+x.set(\dur, 0.3);
+x.set(\posSpread, 0.8);
 (
 ~kernosPresets = (
     natural: (

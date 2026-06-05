@@ -56,7 +56,7 @@ NN(\voice).methods;
 
     // latentOffset.do {
     //     arg l, i;
-    //     l.poll(1, ("latent offset index " ++ i).asSymbol);
+    //     l.poll(1, ("latent offset inde x " ++ i).asSymbol);
     // };
 
     latent = NN(\voice, \encode).ar(
