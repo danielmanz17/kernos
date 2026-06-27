@@ -185,4 +185,3 @@ MIDIdef.cc(\naturalPreset, {
 
 x.set(\grainEnv, ~gaussEnv);
 
-
