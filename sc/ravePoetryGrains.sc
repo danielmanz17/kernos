@@ -4,7 +4,7 @@ ServerOptions.devices();
 // Set input/output devices
 (
 s.options.inDevice_("MacBook Pro Microphone");
-s.options.outDevice_("MacBook Pro Speakers");
+s.options.outDevice_("MiniFuse 2");
 s.boot;
 )
 
@@ -114,18 +114,28 @@ SynthDef(\nnVoice, {
 }).add;
 )
 
+s.freeAll();
+
 (
-~grains = Synth(\grain, [
-	in: ~grainBus,
-	atk: 1,
-	rel: 5,
-	cf: 5000,
-	del: 0.15,
-	pan: 0.7,
-]);
-~voice = Synth(\nnVoice, [auxOut: ~grainBus, auxAmp: 0.7]);
+var num = 30;
+~grain = num.collect({
+	arg n;
+	Synth(\grain, [
+		in: ~grainBus,
+		atk: exprand(0.1, 3),
+		amp: n.linlin(0, num-1, -3, -15).dbamp,
+		cf: n.linexp(0, num-1, 10000, 1000),
+		del: n.linexp(0, num-1, 0.08, 0.5),
+		dens: n.linexp(0, num-1, 1, 30),
+		graindur: n.linexp(0, num-1, 0.3, 0.03),
+		pan: n.linexp(0, num-1, 0.4, 0.9)
+	]);
+});
+
+~voice = Synth(\nnVoice, [auxOut: ~grainBus, auxAmp: 0.3]);
+
 )
 
 s.scope(rate: \audio, numChannels: 2, index: 4);
 s.scope(rate: \audio, numChannels: 2, index: 0);
-s.plotTree;
+s.plotTree;	
